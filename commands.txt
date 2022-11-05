@@ -1,0 +1,20 @@
+load --init ../expl/samples/prog.xsm
+load --idle ../expl/samples/process.xsm
+load --exec ../expl/samples/list.xsm
+load --int=10 ../spl/spl_progs/haltprog1.xsm
+load --exhandler ../spl/spl_progs/haltprog2.xsm
+load --int=timer $HOME/myexpos/spl/spl_progs/timer1.xsm
+load --int=console $HOME/myexpos/spl/spl_progs/console.xsm
+load --int=disk ../spl/spl_progs/disk.xsm
+load --int=7 ../spl/spl_progs/int_7.xsm
+load --int=6 ../spl/spl_progs/int_6.xsm
+load --int=9 ../spl/spl_progs/exec.xsm
+load --library ../expl/library.lib
+load --module 0 ../spl/spl_progs/module_0.xsm
+load --module 1 ../spl/spl_progs/process.xsm
+load --module 2 ../spl/spl_progs/memory.xsm
+load --module 4 ../spl/spl_progs/device.xsm
+load --module 7 ../spl/spl_progs/module_7.xsm
+load --module 5 ../spl/spl_progs/module_5.xsm
+load --os $HOME/myexpos/spl/spl_progs/os_startup1.xsm
+exit

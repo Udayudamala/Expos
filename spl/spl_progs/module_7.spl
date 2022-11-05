@@ -1,0 +1,162 @@
+//loading init program
+loadi(65,7);
+loadi(66,8);
+
+//loading halt(INT_10)
+loadi(22,35);
+loadi(23,36);
+
+//loading exception handler
+loadi(2, 15);
+loadi(3, 16);
+
+//loading library
+loadi(63,13);
+loadi(64,14);
+
+//loading timer interrupt
+loadi(4, 17);
+loadi(5, 18);
+
+//loading write interrupt(INT_7)
+loadi(16,29);
+loadi(17,30);
+
+//loading idle process
+loadi(69,11);
+loadi(70,12);
+
+//loading MOD_5(scheduler)
+loadi(50,63);
+loadi(51,64);
+
+//loading MOD_0(resource manager)
+loadi(40,53);
+loadi(41,54);
+
+//loading MOD_4(device manager)
+loadi(48,61);
+loadi(49,62);
+
+//loading console interrupt
+loadi(8,21);
+loadi(9,22);
+
+//loading INT_6(read call)
+loadi(14,27);
+loadi(15,28);
+
+//loading MOD_1(process manager)
+loadi(42,55);
+loadi(43,56);
+
+//loading MOD_2(memory manager)
+loadi(44,57);
+loadi(45,58);
+
+//loading INT_9(exec call)
+loadi(20,33);
+loadi(21,34);
+
+//loading inode_table
+loadi(59,3);
+loadi(60,4);
+
+//loading disk interrupt
+loadi(6,19);
+loadi(7,20);
+
+//loading disk free list
+loadi(61,2);
+
+PTBR=PAGE_TABLE_BASE+20;
+[PROCESS_TABLE + 27] = 80;
+[PROCESS_TABLE + 17] = 1;
+[PROCESS_TABLE + 20] = CREATED;
+[PROCESS_TABLE + 29] = 8*512;
+[PROCESS_TABLE + 28] = 0;
+[PROCESS_TABLE + 30] = PAGE_TABLE_BASE+20;
+[PROCESS_TABLE + 31] = 10;
+
+ //Library
+[PTBR+0] = 63;
+[PTBR+1] = "0100";
+[PTBR+2] = 64;
+[PTBR+3] = "0100";
+
+//Heap
+[PTBR+4] = 78;
+[PTBR+5] = "0110";
+[PTBR+6] = 79;
+[PTBR+7] = "0110";
+
+//Code
+[PTBR+8] = 65;
+[PTBR+9] = "0100";
+[PTBR+10] = 66;
+[PTBR+11] = "0100";
+[PTBR+12] = -1;
+[PTBR+13] = "0000";
+[PTBR+14] = -1;
+[PTBR+15] = "0000";
+
+//Stack
+[PTBR+16] = 76;
+[PTBR+17] = "0110";
+[PTBR+18] = 77;
+[PTBR+19] = "0110";
+
+[76*512] = [65 * 512 + 1];
+
+alias count R2;
+count=0;
+while(count<=82) do
+    [MEMORY_FREE_LIST+count]=1;
+    count = count + 1;
+endwhile;
+count=83;
+while(count<=127) do
+    [MEMORY_FREE_LIST+count]=0;
+    count = count + 1;
+endwhile;
+
+[SYSTEM_STATUS_TABLE+3]=0;
+[SYSTEM_STATUS_TABLE+2]=45;
+[DISK_STATUS_TABLE]=0;
+
+alias counter R4;
+counter=1;
+while(counter<=8) do
+    [81*512-counter*2]=-1;
+    counter=counter+1;
+endwhile;
+
+counter=0;
+while(counter<=9) do
+    count=0;
+    while(count<=15) do
+        [DISK_MAP_TABLE+count*10+counter]=-1;
+        count=count+1;
+    endwhile;
+    counter=counter+1;
+endwhile;
+
+[DISK_MAP_TABLE+10+4]=65;
+[DISK_MAP_TABLE+10+5]=66;
+
+[PROCESS_TABLE+(2*16)+4]=TERMINATED;
+[PROCESS_TABLE+(3*16)+4]=TERMINATED;
+[PROCESS_TABLE+(4*16)+4]=TERMINATED;
+[PROCESS_TABLE+(5*16)+4]=TERMINATED;
+[PROCESS_TABLE+(6*16)+4]=TERMINATED;
+[PROCESS_TABLE+(7*16)+4]=TERMINATED;
+[PROCESS_TABLE+(8*16)+4]=TERMINATED;
+[PROCESS_TABLE+(9*16)+4]=TERMINATED;
+[PROCESS_TABLE+(10*16)+4]=TERMINATED;
+[PROCESS_TABLE+(11*16)+4]=TERMINATED;
+[PROCESS_TABLE+(12*16)+4]=TERMINATED;
+[PROCESS_TABLE+(13*16)+4]=TERMINATED;
+[PROCESS_TABLE+(14*16)+4]=TERMINATED;
+[PROCESS_TABLE+(15*16)+4]=TERMINATED;
+[TERMINAL_STATUS_TABLE]=0;
+return;

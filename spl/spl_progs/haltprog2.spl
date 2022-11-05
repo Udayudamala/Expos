@@ -1,0 +1,87 @@
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = -1;
+[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+backup;
+breakpoint;
+
+print "EIP";
+print EIP;
+print "EPN";
+print EPN;
+
+
+multipush (EIP);
+if(EC==1) then
+    print "illegal instruction";
+    print EIP;
+    R1=3;
+    R2=[SYSTEM_STATUS_TABLE+1];
+    call MOD_1;
+    call MOD_5;
+endif;
+
+if(EC==2) then
+    print "illegalMA";
+    print EPN;
+    print EIP;
+    R1=3;
+    R2=[SYSTEM_STATUS_TABLE+1];
+    call MOD_1;
+    call MOD_5;
+endif;
+
+if(EC==3) then
+    print "arithmetic exception";
+    R1=3;
+    R2=[SYSTEM_STATUS_TABLE+1];
+    call MOD_1;
+    call MOD_5;
+endif;
+
+if([PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13]==(PTLR*512)-1) then
+    print "return address cant be pushed onto the stack as the user stack is full";
+    R1=3;
+    R2=[SYSTEM_STATUS_TABLE+1];
+    call MOD_1;
+    call MOD_5;
+endif;
+print EC;
+if(EC==0) then
+    print "errri";
+    R7 = 0;
+    R7 = 0;
+    R7 = 0;
+    R7 = 0;
+    R7 = 0;
+    R7 = 0;
+    R7 = 0;
+    R7 = 0;
+    if(EPN==5 || EPN==6 || EPN==7) then
+        R1=5;
+        R2=[DISK_MAP_TABLE+EPN];
+        call MOD_2;
+        [PTBR+EPN]=R0;
+        [PTBR+EPN+1]="1100";
+    endif;
+      print EPN;
+    if(EPN==2 || EPN==3) then
+        R1=1;
+        call MOD_2;
+        print R0;
+        [PTBR+2]=R0;
+        [PTBR+3]="1110";
+
+        R1=1;
+        call MOD_2;
+        [PTBR+4]=R0;
+           print R0;
+        [PTBR+5]="1110";
+    endif;
+
+endif;
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = 0;
+multipop (EIP);
+restore;
+SP=[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+multipush (EIP);
+ireturn;

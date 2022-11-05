@@ -1,0 +1,142 @@
+[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+alias userSP R0;
+userSP = SP;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = 9;
+
+
+alias physicalPageNum R1;
+alias offset R2;
+alias nameAddr R3;
+physicalPageNum = [PTBR + 2 * ((userSP - 4)/ 512)];
+offset = (userSP - 4) % 512;
+nameAddr = (physicalPageNum * 512) + offset;
+alias name R4;
+name=[nameAddr];
+
+alias counter R5;
+counter=0;
+while(counter<=60) do
+    if([INODE_TABLE+(counter*16)+1]==name) then
+        break;
+    endif;
+    counter=counter+1;
+endwhile;
+
+if(counter==61 || [INODE_TABLE+(counter*16)]!=3) then
+    alias physicalAddrRetVal R5;
+    physicalAddrRetVal = ([PTBR + 2 * ((userSP - 1) / 512)] * 512) + ((userSP - 1) % 512);
+    [physicalAddrRetVal] = -1;
+    [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 9]=0;
+    SP = [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+    ireturn;
+else
+    R1=3;
+    R2=[SYSTEM_STATUS_TABLE+1];
+    multipush(R1,R2,R3,R4,R5);
+    call MOD_1;
+    multipop(R1,R2,R3,R4,R5);
+
+    alias userPageNo R6;
+    userPageNo=[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+11];
+    [MEMORY_FREE_LIST+userPageNo]=[MEMORY_FREE_LIST+userPageNo]+1;
+    [SYSTEM_STATUS_TABLE+2]=[SYSTEM_STATUS_TABLE+2]-1;
+
+
+    SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+    [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 4]=RUNNING;
+    [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 7]=counter;
+
+alias count R7;
+count=1;
+while(count<=8) do
+    [(userPageNo+1)*512-count*2]=-1;
+    count=count+1;
+endwhile;
+
+
+    PTBR=PAGE_TABLE_BASE+20;
+    PTLR=10;
+
+    [PTBR+0] = 63;
+    [PTBR+1] = "0100";
+    [PTBR+2] = 64;
+    [PTBR+3] = "0100";
+
+
+    [PTBR+4]=-1;
+    [PTBR+5]="0000";
+
+
+    [PTBR+6]=-1;
+    [PTBR+7]="0000";
+
+    multipush(R1,R2,R3,R4,R5);
+    R1=1;
+    call MOD_2;
+    [PTBR+16]=R0;
+    [PTBR+17]="0110";
+    multipop(R1,R2,R3,R4,R5);
+
+
+    multipush(R1,R2,R3,R4,R5);
+    R1=1;
+    call MOD_2;
+    multipop(R1,R2,R3,R4,R5);
+
+    [PTBR+18]=R0;
+    [PTBR+19]="0110";
+
+    multipush(R1,R2,R3,R4,R5);
+    R1=5;
+    R2=[INODE_TABLE+(counter*16)+8];
+    call MOD_2;
+    [PTBR+8]=R0;
+    [PTBR+9]="0100";
+    multipop(R1,R2,R3,R4,R5);
+
+    alias loop R2;
+    loop=0;
+    alias val R3;
+    val=0;
+    alias jack R4;
+    jack=8;
+    alias disk_var R8;
+    disk_var=0;
+
+    while(disk_var<=9) do
+        [DISK_MAP_TABLE+10+disk_var]=-1;
+        disk_var=disk_var+1;
+    endwhile;
+
+    disk_var=4;
+    while(loop<=3) do
+        if([INODE_TABLE+(counter*16)+jack]!=-1) then
+            val=val+1;
+            [DISK_MAP_TABLE+10+disk_var]=[INODE_TABLE+(counter*16)+jack];
+            disk_var=disk_var+1;
+        else
+            break;
+        endif;
+        loop=loop+1;
+        jack=jack+1;
+    endwhile;
+
+
+    jack=10;
+    multipush(R1,R2,R3,R4,R5);
+
+    while(jack<=14) do
+        [PTBR+jack]=-1;
+        [PTBR+jack+1]="0000";
+        jack=jack+2;
+    endwhile;
+    multipop(R1,R2,R3,R4,R5);
+
+
+    [[PTBR+16]*512]=[[PTBR+8]*512+1];
+    SP=8*512;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = 0;
+    breakpoint;
+    ireturn;
+endif;

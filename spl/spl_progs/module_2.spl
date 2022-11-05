@@ -1,0 +1,37 @@
+if(R1==1) then
+    [SYSTEM_STATUS_TABLE+3]=[SYSTEM_STATUS_TABLE+3]+1;
+    if([SYSTEM_STATUS_TABLE+2]==0) then
+        [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+4]=WAIT_MEM;
+        call MOD_5;
+    endif;
+    [SYSTEM_STATUS_TABLE+3]=[SYSTEM_STATUS_TABLE+3]-1;
+    [SYSTEM_STATUS_TABLE+2]=[SYSTEM_STATUS_TABLE+2]-1;
+
+    alias count R2;
+    count=0;
+    while(count<=127) do
+        if([MEMORY_FREE_LIST+count]==0) then
+            [MEMORY_FREE_LIST+count]=1;
+            R0=count;
+            break;
+        endif;
+        count=count+1;
+    endwhile;
+    return;
+else
+    if(R1==2) then
+        [MEMORY_FREE_LIST+R2]=[MEMORY_FREE_LIST+R2]-1;
+        if([MEMORY_FREE_LIST+R2]==0) then
+            [SYSTEM_STATUS_TABLE+2]=[SYSTEM_STATUS_TABLE+2]+1;
+        endif;
+        alias count R2;
+        count=1;
+        while(count<=15) do
+            if([PROCESS_TABLE+(count*16)+4]==WAIT_MEM) then
+                [PROCESS_TABLE+(count*16)+4]=READY;
+            endif;
+            count=count+1;
+        endwhile;
+        return;
+    endif;
+endif;
