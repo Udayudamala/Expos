@@ -69,6 +69,41 @@ loadi(7,20);
 //loading disk free list
 loadi(61,2);
 
+//loading INT_8(fork sys call)
+loadi(18,31);
+loadi(19,32);
+
+//loading INT_11
+loadi(24,37);
+loadi(25,38);
+
+//loading INT_15
+loadi(32,45);
+loadi(33,46);
+
+//loading INT_13
+loadi(28,41);
+loadi(29,42);
+
+//loading INT_14
+loadi(30,43);
+loadi(31,44);
+
+//loading INT_4
+loadi(10,23);
+loadi(11,24);
+
+//loading INT_5
+loadi(12,25);
+loadi(13,26);
+
+//loading module_3(file manager)
+loadi(46,59);
+loadi(47,60);
+
+//loading root file
+loadi(62,5);
+
 PTBR=PAGE_TABLE_BASE+20;
 [PROCESS_TABLE + 27] = 80;
 [PROCESS_TABLE + 17] = 1;
@@ -141,8 +176,39 @@ while(counter<=9) do
     counter=counter+1;
 endwhile;
 
+counter=0;
+while(counter<=31) do
+    [SEMAPHORE_TABLE+(counter)*4]=-1;
+    [SEMAPHORE_TABLE+(counter)*4+1]=0;
+    counter=counter+1;
+endwhile;
+
+counter=0;
+while(counter<=15) do
+    [FILE_STATUS_TABLE+(counter*4)]=-1;
+    [FILE_STATUS_TABLE+(counter*4)+1]=-1;
+    counter=counter+1;
+endwhile;
+
+counter=0;
+while(counter<=3) do
+    [BUFFER_TABLE+(counter*4)]=-1;
+    [BUFFER_TABLE+(counter*4)+1]=0;
+    [BUFFER_TABLE+(counter*4)+2]=-1;
+    counter=counter+1;
+endwhile;
+
+counter=0;
+while(counter<=31) do
+    [OPEN_FILE_TABLE+(counter)*4]=-1;
+    [OPEN_FILE_TABLE+(counter)*4+1]=0;
+    counter=counter+1;
+endwhile;
+
 [DISK_MAP_TABLE+10+4]=65;
 [DISK_MAP_TABLE+10+5]=66;
+
+[PROCESS_TABLE+(1*16)+3]=1;
 
 [PROCESS_TABLE+(2*16)+4]=TERMINATED;
 [PROCESS_TABLE+(3*16)+4]=TERMINATED;

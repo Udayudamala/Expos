@@ -1,0 +1,189 @@
+alias syscall R0;
+syscall=[[PTBR+2*(SP-5)/512]*512+(SP-5)%512];
+
+alias name R1;
+name=[[PTBR+2*(SP-4)/512]*512+(SP-4)%512];
+
+alias permission R2;
+permission=[[PTBR+2*(SP-3)/512]*512+(SP-2)%512];
+
+alias pcbEntry R10;
+pcbEntry=PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16);
+
+alias userSP R15;
+userSP=SP;
+
+[pcbEntry+ 13] = SP;
+SP = [pcbEntry + 11] * 512 - 1;
+
+if(syscall==1) then
+    [pcbEntry+9]=1;
+
+    alias counter R3;
+    counter=0;
+    while(counter<=59) do
+        if([INODE_TABLE+(counter*16)+1]==name) then
+            break;
+        endif;
+        counter=counter+1;
+    endwhile;
+
+    if(counter<=59) then
+        [pcbEntry+9]=0;
+        SP=userSP;
+        [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=0;
+        ireturn;
+
+    else
+        counter=0;
+        while(counter<=59) do
+            if([INODE_TABLE+(counter*16)+1]==-1) then
+                break;
+            endif;
+            counter=counter+1;
+        endwhile;
+
+        if(counter==60) then
+            [pcbEntry+9]=0;
+            SP=userSP;
+            [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=-1;
+            ireturn;
+
+        else
+            alias inode_address R4;
+            inode_address=INODE_TABLE+(counter*16);
+
+            alias root_address R5;
+            root_address=ROOT_FILE+(counter*8);
+
+            [inode_address+0]=3;
+            [inode_address+1]=name;
+            [inode_address+2]=0;
+            [inode_address+3]=[pcbEntry+3];
+            [inode_address+4]=permission;
+            [inode_address+8]=-1;
+            [inode_address+9]=-1;
+            [inode_address+10]=-1;
+            [inode_address+11]=-1;
+
+            [root_address+0]=name;
+            [root_address+1]=0;
+            [root_address+2]=3;
+            [root_address+3]=[USER_TABLE+([pcbEntry+3])*2];
+            [root_address+4]=permission;
+
+            [pcbEntry+9]=0;
+            SP=userSP;
+            [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=0;
+            ireturn;
+
+        endif;
+    endif;
+
+endif;
+
+if(syscall==4) then
+    [pcbEntry+9]=4;
+
+
+    alias counter R3;
+    counter=0;
+    while(counter<=59) do
+        if([INODE_TABLE+(counter*16)+1]==name) then
+            break;
+        endif;
+        counter=counter+1;
+    endwhile;
+
+    if(counter==60) then
+            [pcbEntry+9]=0;
+            SP=userSP;
+            [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=0;
+            ireturn;
+
+    else
+        if([INODE_TABLE+(counter*16)]!=3) then
+            [pcbEntry+9]=0;
+            SP=userSP;
+            [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=-1;
+            ireturn;
+
+        else
+             alias inode_address R4;
+             inode_address=INODE_TABLE+(counter*16);
+
+            alias root_address R5;
+            root_address=ROOT_FILE+(counter*8);
+
+           if( [root_address+4]==0 ) then
+
+                if([pcbEntry+3]!=1 || [inode_address+3]!=[pcbEntry+3]) then
+
+                    [pcbEntry+9]=0;
+                    SP=userSP;
+                    [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=-1;
+                    ireturn;
+                endif;
+           endif;
+
+         backup;
+          R1=4;
+          R2=counter;
+          R3=[SYSTEM_STATUS_TABLE+1];
+          call MOD_0;
+          restore;
+
+          if([FILE_STATUS_TABLE+(counter*4)+1]!=-1) then
+                backup;
+                R1=5;
+                R2=counter;
+                R3=[SYSTEM_STATUS_TABLE+1];
+                call MOD_0;
+                restore;
+
+                [pcbEntry+9]=0;
+                SP=userSP;
+                [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=-2;
+                ireturn;
+           endif;
+
+        alias diskblock R8;
+        diskblock=8;
+
+        while(diskblock<=11 && [inode_address+diskblock]!=-1) do
+
+            if([BUFFER_TABLE+([inode_address+diskblock]%4)*4]!=-1 && [BUFFER_TABLE+([inode_address+diskblock]%4)*4+1]==1) then
+
+                [BUFFER_TABLE+([inode_address+diskblock]%4)*4+1]=0;
+
+                backup;
+                R1=4;
+                R2=[inode_address+diskblock];
+                R3=[SYSTEM_STATUS_TABLE+1];
+                call MOD_2;
+                restore;
+
+            endif;
+
+            diskblock=diskblock+1;
+         endwhile;
+
+         [inode_address+1]=-1;
+         [root_address]=-1;
+
+          backup;
+          R1=5;
+          R2=counter;
+          R3=[SYSTEM_STATUS_TABLE+1];
+          call MOD_0;
+          restore;
+
+         [pcbEntry+9]=0;
+         SP=userSP;
+         [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=0;
+         ireturn;
+
+        endif;
+    endif;
+
+endif;

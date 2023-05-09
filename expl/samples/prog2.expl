@@ -1,0 +1,21 @@
+int main(){
+	decl
+		str name;
+		int temp;
+	enddecl
+	begin
+		temp=exposcall("Fork");
+		temp=exposcall("Fork");
+		temp=exposcall("Fork");
+		if(temp == 0) then
+            temp=exposcall("Read",-1,name);
+            temp=exposcall("Exec",name);
+		else
+            temp=exposcall("Read",-1,name);
+            temp=exposcall("Exec",name);
+		endif;
+
+
+	return 0;
+	end
+}

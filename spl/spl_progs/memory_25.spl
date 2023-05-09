@@ -1,0 +1,97 @@
+if(R1==1) then
+    [SYSTEM_STATUS_TABLE+3]=[SYSTEM_STATUS_TABLE+3]+1;
+    if([SYSTEM_STATUS_TABLE+2]==0) then
+        [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+4]=WAIT_MEM;
+        call MOD_5;
+    endif;
+    [SYSTEM_STATUS_TABLE+3]=[SYSTEM_STATUS_TABLE+3]-1;
+    [SYSTEM_STATUS_TABLE+2]=[SYSTEM_STATUS_TABLE+2]-1;
+
+    alias count R2;
+    count=0;
+    while(count<=127) do
+        if([MEMORY_FREE_LIST+count]==0) then
+            [MEMORY_FREE_LIST+count]=1;
+            R0=count;
+            break;
+        endif;
+        count=count+1;
+    endwhile;
+    return;
+else
+    if(R1==2) then
+        [MEMORY_FREE_LIST+R2]=[MEMORY_FREE_LIST+R2]-1;
+        if([MEMORY_FREE_LIST+R2]==0) then
+            [SYSTEM_STATUS_TABLE+2]=[SYSTEM_STATUS_TABLE+2]+1;
+        endif;
+        alias count R2;
+        count=1;
+        while(count<=15) do
+            if([PROCESS_TABLE+(count*16)+4]==WAIT_MEM) then
+                [PROCESS_TABLE+(count*16)+4]=READY;
+            endif;
+            count=count+1;
+        endwhile;
+        return;
+    else
+        if(R1==4) then
+            print R2;
+            [DISK_FREE_LIST+R2]=[DISK_FREE_LIST+R2]-1;
+            return;
+        else
+            if(R1==5) then
+                alias counter R3;
+                counter=0;
+                while(counter<=15) do
+                    alias dup R4;
+                    dup=4;
+                    while(dup<=7) do
+                        if(([DISK_MAP_TABLE+counter*10+dup]==R2) && ([PAGE_TABLE_BASE+counter*20+dup*2]!=-1)) then
+                            R0=[PAGE_TABLE_BASE+counter*20+dup*2];
+                            [MEMORY_FREE_LIST+R0]=[MEMORY_FREE_LIST+R0]+1;
+                            return;
+                        endif;
+                    dup=dup+1;
+                    endwhile;
+                    counter=counter+1;
+                endwhile;
+
+                multipush(R1,R2);
+                R1=1;
+                call MOD_2;
+                multipop(R1,R2);
+
+                alias uday_the_saviour R6;
+                uday_the_saviour=R0;
+
+                multipush(R1,R2,R3,R4,R6);
+                R3=R0;
+                R1=2;
+                R4=R2;
+                R2=[SYSTEM_STATUS_TABLE+1];
+                call MOD_4;
+                multipop(R1,R2,R3,R4,R6);
+                R0=uday_the_saviour;
+                breakpoint;
+                return;
+            endif;
+        endif;
+    endif;
+endif;
+
+if(R1==3) then
+    alias counter R4;
+    counter=DISK_FREE_AREA;
+
+    while(counter<=DISK_SWAP_AREA -1) do
+        if([DISK_FREE_LIST+counter]==0) then
+            R0=counter;
+            [DISK_FREE_LIST+counter]=1;
+            return;
+        endif;
+        counter=counter+1;
+    endwhile;
+
+    R0=-1;//no free entry
+    return;
+endif;

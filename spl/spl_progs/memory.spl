@@ -35,6 +35,7 @@ else
         return;
     else
         if(R1==4) then
+            print R2;
             [DISK_FREE_LIST+R2]=[DISK_FREE_LIST+R2]-1;
             return;
         else
@@ -71,6 +72,7 @@ else
                 call MOD_4;
                 multipop(R1,R2,R3,R4,R6);
                 R0=uday_the_saviour;
+                breakpoint;
                 return;
             endif;
         endif;

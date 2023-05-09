@@ -18,9 +18,7 @@ int main()
   enddecl
 
   begin
-    write("in prg");
     x = initialize();
-    write("heap init");
     head=null;
     read(length);
 

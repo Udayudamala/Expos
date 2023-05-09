@@ -1,0 +1,56 @@
+alias syscall R0;
+syscall=[[PTBR+2*(SP-5)/512]*512+(SP-5)%512];
+alias newPID R1;
+newPID=[[PTBR+2*(SP-4)/512]*512+(SP-4)%512];
+alias userSP R15;
+userSP=SP;
+[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+
+if(syscall==13) then
+    [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=13;
+    if([SYSTEM_STATUS_TABLE+1]!=newPID && [PROCESS_TABLE+(newPID*16)+4]!=TERMINATED && newPID>=0 && newPID<16) then
+        [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+4]=WAIT_PROCESS;
+        [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+5]=newPID;
+        call MOD_5;
+        [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=0;
+        SP=[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+        [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=0;
+        ireturn;
+    endif;
+    [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=0;
+    SP=[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+    [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=-1;
+    ireturn;
+endif;
+
+
+if(syscall==14) then
+    [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=14;
+    alias counter R4;
+    counter=0;
+    while(counter<=15) do
+        if([PROCESS_TABLE+(counter*16)+4]==WAIT_PROCESS && [PROCESS_TABLE+(counter*16)+5]==[SYSTEM_STATUS_TABLE+1]) then
+            [PROCESS_TABLE+(counter*16)+4]=READY;
+        endif;
+        counter=counter+1;
+    endwhile;
+    [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=0;
+    SP=[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+    [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=0;
+    ireturn;
+endif;
+
+if(syscall==11) then
+    [[PTBR+2*(userSP-1)/512]*512+(userSP-1)%512]=[SYSTEM_STATUS_TABLE+1];
+    [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=0;
+    SP=[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+    ireturn;
+endif;
+
+if(syscall==12) then
+    [[PTBR+2*(userSP-1)/512]*512+(userSP-1)%512]=[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+2];
+    [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=0;
+    SP=[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+    ireturn;
+endif;

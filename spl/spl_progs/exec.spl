@@ -16,14 +16,14 @@ name=[nameAddr];
 
 alias counter R5;
 counter=0;
-while(counter<=60) do
+while(counter<=59) do
     if([INODE_TABLE+(counter*16)+1]==name) then
         break;
     endif;
     counter=counter+1;
 endwhile;
 
-if(counter==61 || [INODE_TABLE+(counter*16)]!=3) then
+if(counter==60 || [INODE_TABLE+(counter*16)]!=3) then
     alias physicalAddrRetVal R5;
     physicalAddrRetVal = ([PTBR + 2 * ((userSP - 1) / 512)] * 512) + ((userSP - 1) % 512);
     [physicalAddrRetVal] = -1;
@@ -54,8 +54,6 @@ while(count<=8) do
     count=count+1;
 endwhile;
 
-
-    PTBR=PAGE_TABLE_BASE+20;
     PTLR=10;
 
     [PTBR+0] = 63;

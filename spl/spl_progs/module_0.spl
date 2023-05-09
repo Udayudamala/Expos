@@ -1,16 +1,15 @@
 alias functionNum R1;
 alias currentPID R2;
 if(functionNum==8) then
-    if([TERMINAL_STATUS_TABLE]==1) then
+    while([TERMINAL_STATUS_TABLE]==1) do
         [PROCESS_TABLE+(currentPID*16)+4]=WAIT_TERMINAL;
         multipush(R1,R2);
         call MOD_5;
         multipop(R1,R2);
-    else
+    endwhile;
         [TERMINAL_STATUS_TABLE]=1;
         [TERMINAL_STATUS_TABLE+1]=currentPID;
         return;
-    endif;
 endif;
 if(functionNum==9) then
     if([TERMINAL_STATUS_TABLE+1]==currentPID) then
@@ -34,14 +33,52 @@ if(functionNum==9) then
 endif;
 
 if(functionNum==3) then
-    if([DISK_STATUS_TABLE]==1) then
+    while([DISK_STATUS_TABLE]==1) do
         [PROCESS_TABLE+(currentPID*16)+4]=WAIT_DISK;
         multipush(R1,R2);
         call MOD_5;
         multipop(R1,R2);
-    else
+    endwhile;
         [DISK_STATUS_TABLE]=1;
         [DISK_STATUS_TABLE+4]=currentPID;
         return;
+endif;
+
+if(functionNum==6) then
+    alias counter R4;
+    counter=0;
+
+    while(counter<=31) do
+        if([SEMAPHORE_TABLE+(counter)*4+1]==0) then
+            break;
+        endif;
+        counter=counter+1;
+    endwhile;
+
+    if(counter==32) then
+        R0=-1;
+        return;
     endif;
+
+    R0=counter;
+    [SEMAPHORE_TABLE+(counter*4)]=-1;
+    [SEMAPHORE_TABLE+(counter*4)+1]=1;
+    return;
+endif;
+
+if(functionNum==7) then
+    if([SEMAPHORE_TABLE+(R2)*4]==R3) then
+        [SEMAPHORE_TABLE+(R2)*4]=-1;
+
+        alias count R4;
+        count=0;
+        while(count<=15) do
+            if([PROCESS_TABLE+(count*16)+4]==WAIT_SEMAPHORE && [PROCESS_TABLE+(count*16)+5]==R2) then
+                [PROCESS_TABLE+(count*16)+4]=READY;
+            endif;
+            count=count+1;
+        endwhile;
+    endif;
+    [SEMAPHORE_TABLE+(R2*4)+1]=[SEMAPHORE_TABLE+(R2*4)+1]-1;
+    return;
 endif;

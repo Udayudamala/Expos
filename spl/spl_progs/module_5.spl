@@ -1,3 +1,4 @@
+breakpoint;
 alias currentPID R0;
 currentPID = [SYSTEM_STATUS_TABLE+1];
 multipush(BP);
@@ -30,6 +31,7 @@ if((dup+1)<=15) then
 
         //Set back Kernel SP, PTBR , PTLR
         SP =  [new_process_table + 11] * 512 + [new_process_table + 12] ;
+        BP=[SP];
         PTBR = [new_process_table + 14];
         PTLR = [new_process_table + 15];
 

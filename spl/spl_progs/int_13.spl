@@ -1,0 +1,84 @@
+alias syscall R0;
+syscall=[[PTBR+2*(SP-5)/512]*512+(SP-5)%512];
+
+alias userSP R15;
+userSP=SP;
+
+[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+
+alias userPage R5;
+userPage=[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11];
+
+if(syscall==17) then
+    [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=17;
+
+    alias counter R4;
+    counter=1;
+    while(counter<=8) do
+        if([(userPage+1)*512 -counter*2]==-1) then
+            break;
+        endif;
+        counter=counter+1;
+    endwhile;
+
+    if(counter==9) then
+        [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=0;
+        SP=userSP;
+        [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=-1;
+        ireturn;
+    endif;
+
+    [(userPage+1)*512 -counter*2]=1;
+
+    multipush(R4,R5,R15);
+
+    R1=6;
+    R2=[SYSTEM_STATUS_TABLE+1];
+    call MOD_0;
+
+    multipop(R4,R5,R15);
+
+    if(R0==-1) then
+        [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=0;
+        SP=userSP;
+        [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=-2;
+        ireturn;
+    endif;
+
+    [(userPage+1)*512 -counter*2]=SEMAPHORE;
+    [(userPage+1)*512 -counter*2 +1]=R0;
+
+    [[PTBR+2*(userSP-1)/512]*512+(userSP-1)%512]=8-counter;
+    [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=0;
+    SP=userSP;
+    ireturn;
+endif;
+
+if(syscall==18) then
+    [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=18;
+    alias descriptor R6;
+    descriptor=[[PTBR+2*(userSP-4)/512]*512 + (userSP-4)%512];
+
+    if(descriptor>=0 && descriptor<=7 && [(userPage+1)*512 -(8-descriptor)*2]==1) then
+
+        multipush(R6,R5,R15);
+        R1=7;
+        R2=[(userPage+1)*512 -(8-descriptor)*2+1];
+        R3=[SYSTEM_STATUS_TABLE+1];
+        call MOD_0;
+        multipop(R6,R5,R15);
+
+        [(userPage+1)*512 -(8-descriptor)*2]=-1;
+
+        [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=0;
+        SP=userSP;
+        [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=0;
+        ireturn;
+    endif;
+
+    [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=0;
+    SP=userSP;
+    [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=-1;
+    ireturn;
+endif;

@@ -1,0 +1,144 @@
+alias pcbEntry R15;
+pcbEntry=PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16);
+
+[pcbEntry + 9] = 5;
+
+alias userSP R10;
+userSP = SP;
+
+[pcbEntry+ 13] = SP;
+SP = [pcbEntry + 11] * 512 - 1;
+
+alias fileDescriptor R4;
+alias word R5;
+alias returnvalue R6;
+alias userpage R7;
+
+userpage=[pcbEntry+11];
+word=[[PTBR + 2 * ((userSP - 3) / 512)] * 512 + ((userSP - 3) % 512)];
+returnvalue=([PTBR + 2 * (userSP - 1)/ 512] * 512) + ((userSP - 1) % 512);
+
+fileDescriptor=[([PTBR + 2 * ((userSP - 4)/ 512)]*512)+(userSP -4)%512];
+
+if(fileDescriptor==-2) then
+    backup;
+    R1=3;
+    R2=[SYSTEM_STATUS_TABLE+1];
+    R3=word;
+    call MOD_4;
+    restore;
+
+    [returnvalue]=0;
+    SP = userSP;
+    [pcbEntry + 9] = 0;
+    ireturn;
+
+endif;
+
+if(fileDescriptor<0 || fileDescriptor>7) then
+    [returnvalue]=-1;
+    SP = userSP;
+    [pcbEntry + 9] = 0;
+    ireturn;
+endif;
+
+if([(userpage+1)*512 - (8-fileDescriptor)*2]==-1 || [(userpage+1)*512 - (8-fileDescriptor)*2]!=FILE) then
+    [returnvalue]=-1;
+    SP = userSP;
+    [pcbEntry + 9] = 0;
+    ireturn;
+endif;
+
+alias opentableindex R8;
+opentableindex=[(userpage+1)*512 - (8-fileDescriptor)*2+1];
+
+alias inodeindex R9;
+inodeindex=[OPEN_FILE_TABLE+(opentableindex)*4];
+
+if([pcbEntry+3]!=1 && [INODE_TABLE+(inodeindex)*16+4]==1 && [pcbEntry+3]!=[INODE_TABLE+(inodeindex)*16+3]) then
+    [returnvalue]=-3;
+    SP = userSP;
+    [pcbEntry + 9] = 0;
+    ireturn;
+endif;
+
+multipush(R4,R5,R6,R7,R8,R9,R10,R15);
+R1=4;
+R2=inodeindex;
+R3=[SYSTEM_STATUS_TABLE+1];
+call MOD_0;
+multipop(R4,R5,R6,R7,R8,R9,R10,R15);
+
+if(R0==-1) then
+    [returnvalue]=-1;
+    SP = userSP;
+    [pcbEntry + 9] = 0;
+    ireturn;
+endif;
+
+alias lseek R11;
+lseek=[OPEN_FILE_TABLE+(opentableindex)*4+2];
+
+if(lseek==MAX_FILE_SIZE) then
+    backup;
+    R1=5;
+    R2=inodeindex;
+    R3=[SYSTEM_STATUS_TABLE+1];
+    call MOD_0;
+    restore;
+
+    [returnvalue]=-2;
+    SP = userSP;
+    [pcbEntry + 9] = 0;
+    ireturn;
+endif;
+
+if((lseek%512)==0 && lseek==[INODE_TABLE+(inodeindex)*16+2]) then
+    multipush(R4,R5,R6,R7,R8,R9,R10,R11,R15);
+    R1=3;
+    call MOD_2;
+    multipop(R4,R5,R6,R7,R8,R9,R10,R11,R15);
+
+    if(R0==-1) then
+        backup;
+        R1=5;
+        R2=inodeindex;
+        R3=[SYSTEM_STATUS_TABLE+1];
+        call MOD_0;
+        restore;
+
+        [returnvalue]=-2;
+        SP = userSP;
+        [pcbEntry + 9] = 0;
+        ireturn;
+    endif;
+
+    [INODE_TABLE+(inodeindex)*16+(lseek/512)+8]=R0;
+endif;
+
+backup;
+R1=1;
+R2=[INODE_TABLE+(inodeindex)*16+(lseek/512)+8];
+R3=lseek%512;
+R4=word;
+call MOD_3;
+restore;
+
+if(lseek==[INODE_TABLE+(inodeindex)*16+2]) then
+    [INODE_TABLE+(inodeindex)*16+2]=[INODE_TABLE+(inodeindex)*16+2]+1;
+    [ROOT_FILE+(inodeindex)*8+1]=[ROOT_FILE+(inodeindex)*8+1];
+endif;
+
+[OPEN_FILE_TABLE+(opentableindex)*4+2]=[OPEN_FILE_TABLE+(opentableindex)*4+2]+1;
+
+backup;
+R1=5;
+R2=inodeindex;
+R3=[SYSTEM_STATUS_TABLE+1];
+call MOD_0;
+restore;
+
+[returnvalue]=0;
+SP = userSP;
+[pcbEntry + 9] = 0;
+ireturn;

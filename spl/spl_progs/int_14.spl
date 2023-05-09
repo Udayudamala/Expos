@@ -1,0 +1,83 @@
+alias syscall R0;
+syscall=[[PTBR+2*(SP-5)/512]*512+(SP-5)%512];
+
+alias userSP R15;
+userSP=SP;
+
+
+alias userPage R5;
+userPage=[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11];
+
+[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+
+if(syscall==19) then
+    [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=19;
+
+    alias sem_descriptor R6;
+    sem_descriptor=[[PTBR+2*(userSP-4)/512]*512 + (userSP-4)%512];
+
+    if(sem_descriptor>=0 && sem_descriptor<=7 && [(userPage+1)*512 -(8-sem_descriptor)*2]==1) then
+        while([SEMAPHORE_TABLE+([(userPage+1)*512 -(8-sem_descriptor)*2+1])*4]!=-1 && [SEMAPHORE_TABLE+([(userPage+1)*512 -(8-sem_descriptor)*2+1])*4]!=[SYSTEM_STATUS_TABLE+1]) do
+            [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+4]=WAIT_SEMAPHORE;
+            [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+5]=[(userPage+1)*512 -(8-sem_descriptor)*2+1];
+
+            multipush(R6,R5,R15);
+            call MOD_5;
+            multipop(R6,R5,R15);
+        endwhile;
+
+        [SEMAPHORE_TABLE+([(userPage+1)*512 -(8-sem_descriptor)*2+1])*4]=[SYSTEM_STATUS_TABLE+1];
+
+        [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=0;
+        SP=userSP;
+        [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=0;
+        ireturn;
+    endif;
+
+    [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=0;
+    SP=userSP;
+    [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=-1;
+    ireturn;
+endif;
+
+if(syscall==20) then
+    [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=20;
+
+    alias sem_descriptor R6;
+    sem_descriptor=[[PTBR+2*(userSP-4)/512]*512 + (userSP-4)%512];
+
+    if(sem_descriptor>=0 && sem_descriptor<=7 && [(userPage+1)*512 -(8-sem_descriptor)*2]==1) then
+
+        if([SEMAPHORE_TABLE+([(userPage+1)*512 -(8-sem_descriptor)*2+1])*4]!=-1) then
+
+            if([SEMAPHORE_TABLE+([(userPage+1)*512 -(8-sem_descriptor)*2+1])*4]!=[SYSTEM_STATUS_TABLE+1]) then
+                 [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=0;
+                 SP=userSP;
+                 [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=-2;
+                 ireturn;
+            endif;
+
+            [SEMAPHORE_TABLE+([(userPage+1)*512 -(8-sem_descriptor)*2+1])*4]=-1;
+
+            alias count R4;
+            count=0;
+            while(count<=15) do
+                if([PROCESS_TABLE+(count*16)+4]==WAIT_SEMAPHORE && [PROCESS_TABLE+(count*16)+5]==[(userPage+1)*512 -(8-      sem_descriptor)*2+1]) then
+                    [PROCESS_TABLE+(count*16)+4]=READY;
+                endif;
+                count=count+1;
+            endwhile;
+
+            [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=0;
+            SP=userSP;
+            [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=0;
+            ireturn;
+        endif;
+    endif;
+
+    [PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9]=0;
+    SP=userSP;
+    [[PTBR+2*(SP-1)/512]*512+(SP-1)%512]=-1;
+    ireturn;
+endif;
